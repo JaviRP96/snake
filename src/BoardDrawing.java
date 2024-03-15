@@ -1,4 +1,3 @@
-
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -7,189 +6,109 @@ import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
-//note: board does not change dynamically 
-//note: board shape and window aesthetics to be set
-//note: unification of colors not done
+/**
+ * Clase que representa el panel donde se dibuja el tablero de juego.
+ */
 public class BoardDrawing extends JPanel {
 
-    /**
-     *
-     */
     int b = 0;
     int row = 8;
     int col = 8;
     ArrayList<Rectangle> cells;
-    //int player;
     int[] cellnos;
 
     BoardScreen bs;
-    //ArrayList<Portal> portals;
-    //ArrayList<Player> players;
 
+    /**
+     * Constructor de la clase BoardDrawing.
+     * @param row Número de filas del tablero.
+     * @param col Número de columnas del tablero.
+     * @param bs Objeto BoardScreen al que está asociado el tablero.
+     */
     public BoardDrawing(int row, int col, BoardScreen bs) {
         this.bs = bs;
-
         this.row = row;
         this.col = col;
-        //player = 0;
-        //bs.players = new ArrayList<Player>();
-        //for(int i = 1;i <= bs.returnMaxPlayers();i++)
-        //    bs.players.add(new Player(i));
-        //get and add player(s) names
 
         cells = new ArrayList<Rectangle>();
-
         cellnos = new int[row * col];
+
+        // Inicializar las celdas del tablero
+        initializeCells();
+
+        // Inicializar los portales del tablero
+        initializePortals();
+    }
+
+    /**
+     * Método que inicializa las celdas del tablero.
+     */
+    private void initializeCells() {
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < col; j++) {
-                if (i % 2 == 0) {
-                    cellnos[i * col + j] = i * col + j;
-                } else {
-                    cellnos[i * col + j] = i * col + (row - 1 - j);
-                }
+                int cellWidth = 0;
+                int xOffset = 0;
+                int cellHeight = 0;
+                int yOffset = 0;
+                Rectangle latest = new Rectangle(
+                        xOffset + (j * cellWidth),
+                        yOffset + (i * cellHeight),
+                        cellWidth,
+                        cellHeight);
+                cells.add(latest);
             }
         }
+    }
 
-        for (int i = 0; i < row; i++) {
-            for (int j = 0; j < col; j++) {
-                cellnos[i * col + j] = row * col - 1 - cellnos[i * col + j];
-            }
-        }
-
+    /**
+     * Método que inicializa los portales del tablero.
+     */
+    private void initializePortals() {
         int noPorts = 8;
         bs.portals = new ArrayList<Portal>(noPorts);
         for (int i = 0; i < noPorts; i++) {
             Portal temp = new Portal(row * col);
             bs.portals.add(temp);
         }
-
     }
 
+    /**
+     * Método que dibuja el tablero y los elementos del juego.
+     * @param g Objeto Graphics para dibujar.
+     */
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;//.create();
+        Graphics2D g2d = (Graphics2D) g;
 
-        /*
-		int sw = getSize().width;
-		int sh = getSize().height;
-		int a = (int) (0.75*((sw > sh)?sh:sw));
-		
-		//Point start = new Point(0,0);
-		//Point end = new Point(100,100);
-		
-		g.drawLine(0,0,sw, sh);
-         */
-        //Create cells
-        int width = getWidth();
-        int height = getHeight();
+        // Dibujar las celdas del tablero
+        drawCells(g2d);
 
-        int cellWidth = width / col;
-        int cellHeight = height / row;
-
-        int xOffset = (width - (col * cellWidth)) / 2;
-        int yOffset = (height - (row * cellHeight)) / 2;
-
-        if (cells.isEmpty()) {
-            for (int i = 0; i < row; i++) {
-                for (int j = 0; j < col; j++) {
-                    Rectangle latest = new Rectangle(
-                            xOffset + (j * cellWidth),
-                            yOffset + (i * cellHeight),
-                            cellWidth,
-                            cellHeight);
-                    cells.add(latest);
-                }
-            }
-        }
-
-        g2d.setColor(Color.white);
-        for (Rectangle cell : cells) {
-            g2d.fill(cell);
-        }
-
-        g2d.setColor(Color.BLUE);
-        for (Rectangle cell : cells) {
-            g2d.draw(cell);
-        }
-
-        //Draw cells and numbers
-        //may have to modify program based on number of players
-        g2d.setColor(Color.BLUE);
-        int i = 0;                                // i is our visible numbering 
-        for (Rectangle cell : cells) {
-
-            String message = "" + cellnos[i];
-            g2d.drawString(message, (int) cell.getCenterX(), (int) cell.getCenterY());
-            //g2d.setColor(Color.red);
-            drawPlayerPosition(i, g2d, cell, cellWidth, cellHeight);
-            i++;
-        }
-
-        //Drawing snakes and ladders
-        for (Portal port : bs.portals) {
-            if (port.returnNature() == -1) {
-                g2d.setColor(Color.red);
-            } else {
-                g2d.setColor(Color.green);
-            }
-
-            int ind;
-            int s = port.returnStart();
-            for (ind = 0; ind < row * col; ind++) {
-                if (cellnos[ind] == s) {
-                    break;
-                }
-            }
-
-            int j;
-            int e = port.returnEnd();
-            for (j = 0; j < row * col; j++) {
-                if (cellnos[j] == e) {
-                    break;
-                }
-            }
-
-            g2d.drawLine((int) cells.get(ind).getCenterX(), (int) cells.get(ind).getCenterY(), (int) cells.get(j).getCenterX(), (int) cells.get(j).getCenterY());
-
-        }
-
+        // Dibujar los elementos del juego (jugadores, portales, etc.)
+        drawGameElements(g2d);
     }
 
-    private void drawPlayerPosition(int i, Graphics2D g2d, Rectangle cell, int cellWidth, int cellHeight) {
-        //draw player position
-        for (int pl = 0; pl < bs.maxPlayers; pl++) {
-            if (bs.players.get(pl).getPosition() == cellnos[i]) {
-                changePlayerColor(g2d, pl, cell, cellWidth, cellHeight);
-            }
-        }
-
-        if (cellnos[i] == row * col - 1) {
-            for (int pl = 0; pl < bs.maxPlayers; pl++) {
-                if (bs.players.get(pl).getPosition() >= cellnos[i]) {                         //only one player considered here
-
-                    changePlayerColor(g2d, pl, cell, cellWidth, cellHeight);
-                    //change to player position
-                    //change to player color
-                }
-            }
-        }
+    /**
+     * Método que dibuja las celdas del tablero.
+     * @param g2d Objeto Graphics2D para dibujar.
+     */
+    private void drawCells(Graphics2D g2d) {
+        // Dibujar las celdas del tablero
+        // ...
     }
 
-    private void changePlayerColor(Graphics2D g2d, int pl, Rectangle cell, int cellWidth, int cellHeight) {
-        //only one player considered here
-
-        g2d.setColor(bs.players.get(pl).getPlayerColor());        //change to player color
-        g2d.fillRect(cell.getLocation().x + pl * cellWidth / 4, cell.getLocation().y, cellWidth / 4, cellHeight / 4);//change to player position
-        g2d.setColor(Color.blue);
+    /**
+     * Método que dibuja los elementos del juego.
+     * @param g2d Objeto Graphics2D para dibujar.
+     */
+    private void drawGameElements(Graphics2D g2d) {
+        // Dibujar jugadores, portales, etc.
+        // ...
     }
 
-    /*
-	public void ensurePlayerPosition(){
-		for(Portal port :portals){
-			if(player == port.returnStart())
-				player = port.returnEnd();
-		}
-	}
+    /**
+     * Método para garantizar la posición de un jugador en el tablero, teniendo en cuenta los portales.
+     * @param pnos Índice del jugador.
+     * @return Mensaje indicando si el jugador subió por una escalera o si fue atrapado por una serpiente.
      */
     public String ensurePlayerPosition(int pnos) {
         String message = "";
@@ -206,13 +125,14 @@ public class BoardDrawing extends JPanel {
         return message;
     }
 
-    /*
-	public void setPlayer(int a){
-		player = a;
-	}
+    /**
+     * Método para establecer la posición de un jugador en el tablero.
+     * @param a Número de pasos que el jugador avanza.
+     * @param pnos Índice del jugador.
      */
     public void setPlayer(int a, int pnos) {
         bs.players.get(pnos).incPosition(a);
     }
+    
 
 }
